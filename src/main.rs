@@ -1,10 +1,10 @@
+use rand_distr::{Distribution, Normal};
 use std::f32::consts::PI;
 use tetra::{
     Context, ContextBuilder, State,
     graphics::{self, Color, DrawParams, Rectangle, Texture, text::Text},
     input::{MouseButton, get_mouse_position, is_mouse_button_pressed},
     math::Vec2,
-    window,
 };
 
 mod assets;
@@ -13,7 +13,8 @@ mod entities;
 use assets::*;
 use config::*;
 use entities::*;
-// Move this to a config file/ struct?
+
+// Move this to a config file/  sfcostruct?
 const WIN_WIDTH: f32 = 1260.;
 const WIN_HEIGHT: f32 = 720.;
 const MAX_SMOG: f32 = 10000.;
@@ -70,6 +71,9 @@ impl GameState {
 impl State for GameState {
     fn update(&mut self, ctx: &mut Context) -> tetra::Result {
         let mouse_pos = get_mouse_position(ctx);
+
+        // Don't want to do this every time - how can it be done once or on a change?
+        // Look into event function and what that means
         self.config.update_window_size(ctx);
 
         // reduced will change all? Should it be per gear?
@@ -81,7 +85,7 @@ impl State for GameState {
         }
 
         if is_mouse_button_pressed(ctx, MouseButton::Left) {
-            if self.engine.bounds().contains_point(mouse_pos) {
+            if self.engine.bounds(&self.config).contains_point(mouse_pos) {
                 if self.engine.gear.rotation_speed == 0. {
                     self.engine.gear.rotation_speed += 0.5;
                 } else {
@@ -149,14 +153,28 @@ impl State for GameState {
 
             self.extractor1.gloop_to_drop += (gloop_to_drop / 5.).floor() + additional_gloop;
 
+            let mut rng = rand::rng();
+            let spread = Normal::new(0., 4.).unwrap();
+
             if self.extractor1.gloop_to_drop > 0. {
                 for _ in 1..=self.extractor1.gloop_to_drop as usize {
-                    self.gloops.push(Gloop::new(&self.assets));
+                    let y_change = spread.sample(&mut rng) as f32;
+                    self.gloops.push(Gloop::new(
+                        &self.assets,
+                        Vec2::new(
+                            self.config.window_width / 2. + y_change.floor() * 5.,
+                            self.config.window_height - 512.,
+                        ),
+                    ));
                 }
                 self.extractor1.gloop_to_drop = 0.;
 
                 println!("{:?}", self.gloops.len());
             }
+        }
+
+        for glp in &mut self.gloops {
+            glp.update_position(ctx);
         }
 
         if self.engine.running && self.environment.gloop > 0. {
@@ -176,13 +194,18 @@ impl State for GameState {
 
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result {
         graphics::clear(ctx, Color::BLACK);
+        let mut reminders = Text::new(
+            "Make smog much much worse - have a person press for you - maybe 2 then have them suggest turning it on. Once its on fill up with smog very fast and they say they remember why it wasn't on",
+            self.assets.main_font.clone(),
+        );
 
+        reminders.draw(ctx, Vec2::new(16., 56.));
         self.gloop_label.draw(ctx, Vec2::new(16., 16.));
         self.smog_level.draw(ctx, Vec2::new(16., 36.));
         self.engine.texture.draw(
             ctx,
             DrawParams::new()
-                .position(Vec2::new(56., -112.))
+                .position(Vec2::new(56., self.config.window_height - 112.))
                 .scale(Vec2::new(5., 5.))
                 .origin(Vec2::new(
                     self.engine.texture.width() as f32 / 2.,
@@ -204,7 +227,10 @@ impl State for GameState {
         self.extractor1.gear.texture.draw(
             ctx,
             DrawParams::new()
-                .position(Vec2::new(256., self.config.window_height - 312.))
+                .position(Vec2::new(
+                    self.config.window_width / 2.,
+                    self.config.window_height - 512.,
+                ))
                 .scale(Vec2::new(scale, scale))
                 .rotation(self.extractor1.gear.rotation)
                 .origin(Vec2::new(
@@ -241,13 +267,12 @@ impl State for GameState {
             glp.texture.draw(
                 ctx,
                 DrawParams::new()
-                    .position(Vec2::new(
-                        256.,
-                        self.config.window_height
-                            - 80.
-                            - (0.5 * glp.texture.height() as f32) * pile_height,
-                    ))
-                    .scale(Vec2::new(0.5, 0.5)),
+                    .position(Vec2::new(glp.position.x, glp.position.y))
+                    .scale(Vec2::new(0.5, 0.5))
+                    .origin(Vec2::new(
+                        glp.texture.width() as f32 / 2.,
+                        glp.texture.height() as f32 / 2.,
+                    )),
             );
 
             pile_height += 1.;
@@ -280,54 +305,6 @@ impl GloopExtractor {
             gloop_to_drop: 0.,
             spare_gloop: 0.,
         }
-    }
-}
-struct Engine {
-    texture: Texture,
-    running: bool,
-    gear: Gear,
-    efficiency: f32, // how much gloop is burned - move to be in the gear if this goes up, harder
-    // to spin ( adds friction ) and therefore smog
-    friction: f32, // how much the gear slows down after clicks / engine speed is slowed down
-    gloop_burned: f32,
-}
-
-impl Engine {
-    fn new(assets: &Assets) -> Engine {
-        Engine {
-            texture: assets.engine_texture.clone(),
-            running: false,
-            gear: Gear::new(assets.gear_texture.clone(), 5.),
-            efficiency: 0.,
-            friction: 0.08,
-            gloop_burned: 7., // per full spin
-        }
-    }
-
-    fn bounds(&self) -> Rectangle {
-        // hardcoded for now as position just put in above.
-        Rectangle::new(
-            56. - (self.texture.width() as f32 * 5.) / 2.,
-            WIN_HEIGHT - 112. - ((self.texture.height() as f32 * 5.) / 2.),
-            self.texture.width() as f32 * 5.,
-            self.texture.height() as f32 * 5.,
-        )
-    }
-
-    fn find_smog_output(&mut self, gloop: f32) -> f32 {
-        if !self.running {
-            return 0.;
-        }
-
-        // this should be gloop level within engine - not environment gloop
-        if gloop == 0. {
-            return 0.;
-        }
-
-        (self.gloop_burned + self.friction * 10.) * self.gear.rotation_speed * 0.5 // this is per rotation - 0.3 should feel very
-        //
-        // high at start due to inability to process gloop with new prestige can process gloop to
-        // bring this and the amount burned down
     }
 }
 
