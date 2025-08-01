@@ -10,6 +10,8 @@ pub struct Assets {
     pub power_texture: Texture,
     pub glooper_texture: Texture,
     pub gloop_texture: Texture,
+    pub floor_texture: Texture,
+    pub background_image: Texture,
 
     pub main_font: Font,
 }
@@ -29,6 +31,10 @@ impl Assets {
                 .expect("Failed to load power button"),
             gloop_texture: Texture::new(ctx, "./resources/gloop.png")
                 .expect("Failed to load power button"),
+            floor_texture: Texture::new(ctx, "./resources/floor.png")
+                .expect("Failed to load floor"),
+            background_image: Texture::new(ctx, "./resources/background_color_trees.png")
+                .expect("Failed to load background image"),
 
             main_font: Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 16.)
                 .expect("Failed to load main font"),
