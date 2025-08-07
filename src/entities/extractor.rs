@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use tetra::math::Vec2;
 
 use crate::assets::Assets;
@@ -19,5 +21,17 @@ impl Extractor {
         }
     }
 
-    pub fn generate_gloop(&mut self) {}
+    pub fn can_create_gloop(&mut self, spin_amount: f32) -> bool {
+        let gloop_earned = self.base_extract_rate / (2. * PI);
+
+        self.gloop_spare += gloop_earned * spin_amount;
+
+        // 5. should be gloop value const
+        if self.gloop_spare > 5. {
+            self.gloop_spare -= 5.;
+            return true;
+        }
+
+        false
+    }
 }

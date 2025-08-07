@@ -1,19 +1,26 @@
-/*
-use crate::entities::Glooper;
+use crate::entities::{Glooper, Role};
 
 pub struct Office {
-    pub gloopers: Vec<Glooper>,
+    pub hitters: Vec<Glooper>,
+    pub idlers: Vec<Glooper>,
+    pub movers: Vec<Glooper>,
 }
 
 impl Office {
     pub fn new() -> Office {
         Office {
-            gloopers: Vec::new(),
+            hitters: Vec::new(),
+            idlers: Vec::new(),
+            movers: Vec::new(),
         }
     }
 
     pub fn add_glooper(&mut self, glooper: Glooper) {
-        self.gloopers.push(glooper)
+        match glooper.role {
+            Role::Hitter => self.hitters.push(glooper),
+            Role::Mover => self.movers.push(glooper),
+            Role::Researcher => todo!("Add researcher list"),
+            Role::Idle => self.idlers.push(glooper),
+        }
     }
 }
-*/

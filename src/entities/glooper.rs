@@ -1,20 +1,27 @@
-use tetra::{
-    Context,
-    graphics::{DrawParams, Texture},
-    math::Vec2,
-    window,
-};
+use tetra::math::Vec2;
 
-use crate::assets::Assets;
+use crate::{environment::Environment, machinery::Machinery};
 
+use super::{Engine, Gloop};
+
+#[derive(Debug)]
 pub struct Glooper {
-    pub texture: Texture,
     pub role: Role,
     pub position: Vec2<f32>,
+    pub specialist: bool,
     pub scale: f32,
+    // Split some of these into role details.
+    resting: bool,
+    bounce_up: bool,
+    bounce_level: f32,
+    time_since_hit: f32,
+
+    pub gloop_collected: bool,
+    pub gloop_held: Option<Gloop>, // Make this a vec when carrying more than one possible.
 }
 
-enum Role {
+#[derive(Debug)]
+pub enum Role {
     Hitter,
     Mover,
     Researcher,
@@ -22,12 +29,91 @@ enum Role {
 }
 
 impl Glooper {
-    pub fn new(assets: &Assets, pos: Vec2<f32>) -> Glooper {
+    pub fn new(pos: Vec2<f32>, role: Role) -> Glooper {
         Glooper {
-            texture: assets.glooper_texture.clone(),
-            role: Role::Idle,
+            role: role,
             position: pos,
+            specialist: false,
             scale: 0.75,
+            resting: false,
+            bounce_up: true,
+            bounce_level: 0.,
+            time_since_hit: 0.,
+            gloop_collected: false,
+            gloop_held: None,
+        }
+    }
+
+    pub fn bounce(&mut self) {
+        if self.bounce_up {
+            self.position.y += 0.4 as f32;
+            self.bounce_level += 0.4;
+            if self.bounce_level >= 4. {
+                self.bounce_up = false;
+            }
+        } else {
+            self.position.y -= 0.4 as f32;
+            self.bounce_level -= 0.4;
+            if self.bounce_level <= 0. {
+                self.bounce_up = true;
+            }
+        }
+    }
+
+    pub fn hit_engine(&mut self, machine: &mut Machinery) {
+        if !self.resting {
+            self.time_since_hit = 0.;
+            self.position.x = machine.engine.position.x - 100.;
+            self.resting = true;
+            machine.turn_handle();
+        } else {
+            self.time_since_hit += 1.;
+            if self.time_since_hit == 1. {
+                self.position = Vec2::new(100., 635.)
+            }
+            if self.time_since_hit == 150. {
+                self.resting = false;
+            }
+        }
+    }
+
+    pub fn move_gloop(&mut self, environment: &mut Environment, engine: &mut Engine) {
+        if self.gloop_collected {
+            self.gloop_held
+                .as_mut()
+                .unwrap()
+                .carry_position(self.position);
+            let move_speed = -0.4;
+            self.position.x += move_speed;
+            if self.position.x <= 240. {
+                engine.add_fuel(self.gloop_held.as_ref().unwrap().value);
+                self.gloop_held = None;
+                self.gloop_collected = false;
+            }
+        } else {
+            if environment.loose_gloop == 0. {
+                return;
+            }
+            let move_speed = 0.9;
+            self.position.x += move_speed;
+            if self.position.x
+                >= ((environment.pile_locations.iter().max().unwrap() * 3) + 232) as f32
+            {
+                let pile = environment
+                    .piles
+                    .get_mut(environment.pile_locations.iter().max().unwrap())
+                    .unwrap();
+
+                let mut gloop = pile.pop().unwrap();
+                if pile.len() == 0 {
+                    environment
+                        .empty_pile(*environment.pile_locations.iter().max().unwrap() as u128);
+                }
+                gloop.carried = true;
+                self.gloop_collected = true;
+                environment.loose_gloop -= 1.;
+                self.gloop_held = Some(gloop);
+            }
         }
     }
 }

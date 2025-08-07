@@ -1,9 +1,11 @@
 use tetra::{Context, window};
 
-pub const ZOOM_SPEED: f32 = 0.01;
+pub const ZOOM_SPEED: f32 = 0.1;
 pub const MOVEMENT_SPEED: f32 = 4.;
 pub const MIN_CAMERA_SCALE: f32 = 0.5;
 pub const MAX_CAMERA_SCALE: f32 = 3.;
+pub const MAX_SMOG: f32 = 10000.;
+
 /// Any general configuration about the file
 /// Add all the parameters that are used on game load here
 pub struct Config {

@@ -1,7 +1,5 @@
 use tetra::{Context, State, window};
 
-use crate::assets::Assets;
-
 pub trait Scene {
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition>;
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result<Transition>;
@@ -30,7 +28,7 @@ impl State for SceneManager {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.update(ctx)? {
                 Transition::None => {}
-                Transition::Push(s) => {
+                Transition::Push(_s) => {
                     todo!("Add pushing here");
                 }
                 Transition::Pop => {
@@ -46,7 +44,7 @@ impl State for SceneManager {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.draw(ctx)? {
                 Transition::None => {}
-                Transition::Push(s) => {
+                Transition::Push(_s) => {
                     todo!("Add push for scene draw");
                 }
                 Transition::Pop => {

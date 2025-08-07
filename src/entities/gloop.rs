@@ -1,48 +1,74 @@
-use rand_distr::{Distribution, Normal};
-use tetra::{
-    Context,
-    graphics::{Rectangle, Texture},
-    math::Vec2,
-    window,
-};
+use tetra::math::Vec2;
 
-use crate::assets::Assets;
+use super::Glooper;
 
+const FALL_SPEED: f32 = 8.; // consider physics processes in space 
+
+#[derive(Debug)]
 pub struct Gloop {
-    pub texture: Texture,
-    value: f32,
+    pub value: f32,
+    dt: f32,
+    pub pile_column: u128,
+    pub moving: bool,
+    // pub velocity: Vec2<f32>,
     pub position: Vec2<f32>,
+    pub carried: bool,
 }
 
 impl Gloop {
-    pub fn new(assets: &Assets) -> Gloop {
+    pub fn new(pile: u128) -> Gloop {
         Gloop {
-            texture: assets.gloop_texture.clone(),
             value: 5.,
-            position: random_start_position(),
+            dt: 1.,
+            moving: true,
+            pile_column: pile,
+            position: Vec2::new(400., 400.),
+            carried: false,
         }
     }
 
-    pub fn update_position(&mut self, ctx: &Context, gloops: &Vec<Gloop>) {
-        // currently only going downwards - maybe add end position to move to in gloop?
-        // consider moving struct / enum that contains final position
-        // would be more grid based
-        if self.can_fall(ctx, gloops) {
-            self.position.y += 10.;
-        }
+    pub fn carry_position(&mut self, position: Vec2<f32>) {
+        self.position = position;
+        self.position.y -= 15.;
     }
 
+    pub fn update_position(&mut self, pile_height: u128) {
+        // just moves straight to the pile
+        // Add fall animation later
+        self.position.x = ((self.pile_column * 3) + 235) as f32;
+        self.position.y = 700. - 50. - (3 * pile_height) as f32;
+        self.moving = false;
+        /*
+        self.position.x += self.velocity.x * (FALL_SPEED + (self.dt * 0.015));
+        self.position.y += self.velocity.y * (FALL_SPEED + (self.dt * 0.015));
+        if self.position.y >= (720. - 70.) {
+            self.position.y = 720. - 70.;
+            self.moving = false;
+            self.velocity = Vec2::zero();
+        } else {
+            self.dt += 1.;
+            self.velocity.y += 0.05 * (1. - self.velocity.y);
+            let mut multiplier = 1.;
+            if self.velocity.x < 0. {
+                multiplier = -1.
+            }
+            self.velocity.x = multiplier * (1. - pow(self.velocity.y, 2)).sqrt();
+        }*/
+    }
+
+    /*
     fn bounds(&self) -> Rectangle {
         Rectangle::new(
-            self.position.x,
-            self.position.y,
-            self.texture.width() as f32 * 0.5,
-            self.texture.height() as f32 * 0.5,
+            self.position.x - self.texture.width() as f32 / 2.,
+            self.position.y - self.texture.width() as f32 / 2.,
+            self.texture.width() as f32,
+            self.texture.height() as f32,
         )
     }
-
-    fn can_fall(&self, ctx: &Context, gloops: &Vec<Gloop>) -> bool {
-        let floor = Rectangle::new(0., window::get_height(ctx) as f32 - 70., 2000., 2.);
+    */
+    /*
+    fn can_fall(&self) -> bool {
+        let floor = Rectangle::new(0., 720. - 70., 2000., 2.);
         let bounds = self.bounds();
 
         if bounds.intersects(&floor) {
@@ -60,12 +86,5 @@ impl Gloop {
         //}
 
         return true;
-    }
-}
-fn random_start_position() -> Vec2<f32> {
-    let mut rng = rand::rng();
-    let spread = Normal::new(0., 40.).unwrap();
-    let dist = spread.sample(&mut rng) as f32;
-
-    Vec2::new(400. + dist, 500.)
+    }*/
 }
