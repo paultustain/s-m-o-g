@@ -12,6 +12,7 @@ pub struct Assets {
     pub gloop_texture: Texture,
     pub floor_texture: Texture,
     pub background_image: Texture,
+    pub pixel: Texture,
 
     pub main_font: Font,
 }
@@ -23,11 +24,11 @@ impl Assets {
                 .expect("Failed to get engine texture"),
             extractor_texture: Texture::new(ctx, "./resources/extractor.png")
                 .expect("Failed to get extractor texture"),
-            engine_texture: Texture::new(ctx, "./resources/block.png")
+            engine_texture: Texture::new(ctx, "./resources/engine_base.png")
                 .expect("Failed to load block texture"),
             power_texture: Texture::new(ctx, "./resources/power.png")
                 .expect("Failed to load power button"),
-            glooper_texture: Texture::new(ctx, "./resources/glooper.png")
+            glooper_texture: Texture::new(ctx, "./resources/dodo.png")
                 .expect("Failed to load power button"),
             gloop_texture: Texture::new(ctx, "./resources/gloop.png")
                 .expect("Failed to load power button"),
@@ -35,8 +36,9 @@ impl Assets {
                 .expect("Failed to load floor"),
             background_image: Texture::new(ctx, "./resources/background_color_trees.png")
                 .expect("Failed to load background image"),
+            pixel: Texture::new(ctx, "./resources/pixel.png").expect("Failed to load pixel"),
 
-            main_font: Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 16.)
+            main_font: Font::vector(ctx, "./resources/slkscr.ttf", 16.)
                 .expect("Failed to load main font"),
         }
     }

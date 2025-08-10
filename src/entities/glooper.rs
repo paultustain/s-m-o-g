@@ -1,6 +1,6 @@
 use tetra::math::Vec2;
 
-use crate::{environment::Environment, machinery::Machinery};
+use crate::{config::FLOOR_LEVEL, environment::Environment, machinery::Machinery};
 
 use super::{Engine, Gloop};
 
@@ -9,7 +9,7 @@ pub struct Glooper {
     pub role: Role,
     pub position: Vec2<f32>,
     pub specialist: bool,
-    pub scale: f32,
+    pub scale: Vec2<f32>,
     // Split some of these into role details.
     resting: bool,
     bounce_up: bool,
@@ -34,7 +34,7 @@ impl Glooper {
             role: role,
             position: pos,
             specialist: false,
-            scale: 0.75,
+            scale: Vec2::new(1., 1.),
             resting: false,
             bounce_up: true,
             bounce_level: 0.,
@@ -69,7 +69,7 @@ impl Glooper {
         } else {
             self.time_since_hit += 1.;
             if self.time_since_hit == 1. {
-                self.position = Vec2::new(100., 635.)
+                self.position = Vec2::new(100., FLOOR_LEVEL)
             }
             if self.time_since_hit == 150. {
                 self.resting = false;
@@ -86,6 +86,7 @@ impl Glooper {
             let move_speed = -0.4;
             self.position.x += move_speed;
             if self.position.x <= 240. {
+                self.scale = Vec2::new(1., 1.);
                 engine.add_fuel(self.gloop_held.as_ref().unwrap().value);
                 self.gloop_held = None;
                 self.gloop_collected = false;
@@ -109,6 +110,7 @@ impl Glooper {
                     environment
                         .empty_pile(*environment.pile_locations.iter().max().unwrap() as u128);
                 }
+                self.scale = Vec2::new(-1., 1.);
                 gloop.carried = true;
                 self.gloop_collected = true;
                 environment.loose_gloop -= 1.;

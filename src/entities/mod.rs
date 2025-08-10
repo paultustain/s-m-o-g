@@ -1,3 +1,4 @@
+mod button;
 mod engine;
 mod extractor;
 mod floor;
@@ -5,6 +6,7 @@ mod gear;
 mod gloop;
 mod glooper;
 
+pub use button::*;
 pub use engine::*;
 pub use extractor::*;
 pub use floor::*;

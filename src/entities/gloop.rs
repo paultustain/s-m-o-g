@@ -1,16 +1,20 @@
-use tetra::math::Vec2;
+use tetra::{
+    Context,
+    graphics::{Color, DrawParams},
+    math::Vec2,
+};
 
-use super::Glooper;
+use crate::{assets::Assets, config::FLOOR_LEVEL};
 
 const FALL_SPEED: f32 = 8.; // consider physics processes in space 
 
-#[derive(Debug)]
+const GLOOP_GREY: Color = Color::rgba(100., 100., 100., 1.);
+
+#[derive(Debug, Clone, Copy)]
 pub struct Gloop {
     pub value: f32,
-    dt: f32,
     pub pile_column: u128,
     pub moving: bool,
-    // pub velocity: Vec2<f32>,
     pub position: Vec2<f32>,
     pub carried: bool,
 }
@@ -19,7 +23,6 @@ impl Gloop {
     pub fn new(pile: u128) -> Gloop {
         Gloop {
             value: 5.,
-            dt: 1.,
             moving: true,
             pile_column: pile,
             position: Vec2::new(400., 400.),
@@ -27,16 +30,30 @@ impl Gloop {
         }
     }
 
+    pub fn draw(self, ctx: &mut Context, assets: &Assets) {
+        // chance to make it more fall like by missing top corners when falling
+        // Occasionally tweak colour?
+        //G
+        for w in -1..=1 {
+            for h in -1..=1 {
+                let pos = Vec2::new(self.position.x + w as f32, self.position.y + h as f32);
+                assets
+                    .pixel
+                    .draw(ctx, DrawParams::new().position(pos).color(GLOOP_GREY));
+            }
+        }
+    }
+
     pub fn carry_position(&mut self, position: Vec2<f32>) {
         self.position = position;
-        self.position.y -= 15.;
+        self.position.y -= 16.;
     }
 
     pub fn update_position(&mut self, pile_height: u128) {
         // just moves straight to the pile
         // Add fall animation later
         self.position.x = ((self.pile_column * 3) + 235) as f32;
-        self.position.y = 700. - 50. - (3 * pile_height) as f32;
+        self.position.y = FLOOR_LEVEL - (3 * (pile_height + 1)) as f32;
         self.moving = false;
         /*
         self.position.x += self.velocity.x * (FALL_SPEED + (self.dt * 0.015));
@@ -55,36 +72,4 @@ impl Gloop {
             self.velocity.x = multiplier * (1. - pow(self.velocity.y, 2)).sqrt();
         }*/
     }
-
-    /*
-    fn bounds(&self) -> Rectangle {
-        Rectangle::new(
-            self.position.x - self.texture.width() as f32 / 2.,
-            self.position.y - self.texture.width() as f32 / 2.,
-            self.texture.width() as f32,
-            self.texture.height() as f32,
-        )
-    }
-    */
-    /*
-    fn can_fall(&self) -> bool {
-        let floor = Rectangle::new(0., 720. - 70., 2000., 2.);
-        let bounds = self.bounds();
-
-        if bounds.intersects(&floor) {
-            return false;
-        }
-
-        // find better way to sort this list so it doesn't have to straight loop through
-        //for glp in gloops {
-        //    if bounds != glp.bounds() {
-        //       // dont check self
-        //        if bounds.intersects(&glp.bounds()) {
-        //            return false;
-        //        }
-        //    }
-        //}
-
-        return true;
-    }*/
 }

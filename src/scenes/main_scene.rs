@@ -7,8 +7,8 @@ use tetra::{
 
 use crate::{
     assets::Assets,
-    config::{MAX_CAMERA_SCALE, MIN_CAMERA_SCALE, MOVEMENT_SPEED, ZOOM_SPEED},
-    entities::{Glooper, Role},
+    config::{FLOOR_LEVEL, MAX_CAMERA_SCALE, MIN_CAMERA_SCALE, MOVEMENT_SPEED, ZOOM_SPEED},
+    entities::{Glooper, MainBox, Role},
     environment::Environment,
     machinery::Machinery,
     office::Office,
@@ -25,38 +25,48 @@ pub struct MainScene {
     machinery: Machinery,
     environment: Environment,
     office: Office,
+    button: MainBox, // Create a UI file at higher level?
 }
 
 impl MainScene {
     pub fn new(ctx: &mut Context) -> tetra::Result<MainScene> {
+        let assets = Assets::load(ctx);
         let mut cam = Camera::new(1260., 720.);
         cam.position = Vec2::new(630., 360.);
+        cam.scale = Vec2::new(3., 3.);
+        cam.position = Vec2::new(200., FLOOR_LEVEL - 115.);
 
         let mut office = Office::new();
-        let glooper = Glooper::new(Vec2::new(100., 635.), Role::Hitter);
+        let glooper = Glooper::new(Vec2::new(100., FLOOR_LEVEL), Role::Hitter);
         office.add_glooper(glooper);
-        let mover = Glooper::new(Vec2::new(100., 635.), Role::Mover);
+        let mover = Glooper::new(Vec2::new(100., FLOOR_LEVEL), Role::Mover);
         office.add_glooper(mover);
+
         Ok(MainScene {
             background: Canvas::new(ctx, 1260, 720)?,
             canvas: Canvas::new(ctx, 1260, 720)?,
             camera: cam,
-            assets: Assets::load(ctx),
-            machinery: Machinery::new(&Assets::load(ctx)),
+            assets: assets,
+            machinery: Machinery::new(),
             environment: Environment::new(),
             office: office,
+            button: MainBox::new(50, 30, Vec2::new(630., 50.)),
         })
     }
 }
 
 impl Scene for MainScene {
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
-        println!("Piles in use: {:#?}", self.environment.pile_locations);
         let mouse_pos = self.camera.mouse_position(ctx);
         let mut column_top = Rect::new(0., 0., 1., 1.);
 
         if input::is_mouse_button_pressed(ctx, MouseButton::Left) {
-            if self.machinery.engine.bounds().contains_point(mouse_pos) {
+            if self
+                .machinery
+                .engine
+                .bounds(&self.assets.engine_texture)
+                .contains_point(mouse_pos)
+            {
                 self.machinery.turn_handle();
             }
         }
@@ -70,7 +80,7 @@ impl Scene for MainScene {
                     let column_height = self.environment.piles[&(column_hover as u128)].len() + 1;
                     column_top = Rect::new(
                         (column_hover as f32 * 3.) + 232.,
-                        700. - 50. - (3. * (column_height - 1) as f32),
+                        FLOOR_LEVEL - (3. * (column_height - 1) as f32),
                         3.,
                         3.,
                     );
@@ -135,18 +145,19 @@ impl Scene for MainScene {
             }
         }
 
-        if input::is_key_down(ctx, Key::LeftCtrl) && input::is_key_down(ctx, Key::Up) {
+        if input::is_key_down(ctx, Key::W) {
             self.camera.position.y -= MOVEMENT_SPEED;
         }
 
-        if input::is_key_down(ctx, Key::LeftCtrl) && input::is_key_down(ctx, Key::Down) {
+        if input::is_key_down(ctx, Key::S) {
+            // find a way to stop going under the floor
             self.camera.position.y += MOVEMENT_SPEED;
         }
-        if input::is_key_down(ctx, Key::LeftCtrl) && input::is_key_down(ctx, Key::Left) {
+        if input::is_key_down(ctx, Key::A) {
             self.camera.position.x -= MOVEMENT_SPEED;
         }
 
-        if input::is_key_down(ctx, Key::LeftCtrl) && input::is_key_down(ctx, Key::Right) {
+        if input::is_key_down(ctx, Key::D) {
             self.camera.position.x += MOVEMENT_SPEED;
         }
 
@@ -170,6 +181,7 @@ impl Scene for MainScene {
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         graphics::set_canvas(ctx, &self.background);
 
+        // draw background
         self.assets.background_image.draw(
             ctx,
             DrawParams::new()
@@ -182,12 +194,16 @@ impl Scene for MainScene {
         graphics::set_canvas(ctx, &self.canvas);
 
         graphics::clear(ctx, Color::rgba(1., 1., 1., 0.));
+
+        // Drawing the labels and details
+        //
         let mut label = Text::new("Testing", self.assets.main_font.clone());
+        self.button.draw(ctx, &self.assets);
         label.draw(
             ctx,
             DrawParams::new()
                 .position(Vec2::new(16., 16.))
-                .color(Color::BLUE),
+                .color(Color::rgba(0., 75.3, 68.7, 1.)),
         );
 
         let mut gloops_label = Text::new(
@@ -214,59 +230,11 @@ impl Scene for MainScene {
         );
 
         graphics::set_transform_matrix(ctx, self.camera.as_matrix());
-
-        self.machinery.engine.texture.draw(
-            ctx,
-            DrawParams::new()
-                .origin(Vec2::new(
-                    self.machinery.engine.get_width() / 2.,
-                    self.machinery.engine.get_height() / 2.,
-                ))
-                .position(self.machinery.engine.position)
-                .scale(Vec2::new(1.5, 1.5)),
-        );
-
-        self.machinery.engine.gear.texture.draw(
-            ctx,
-            DrawParams::new()
-                .origin(Vec2::new(
-                    self.machinery.engine.gear.get_width() / 2.,
-                    self.machinery.engine.gear.get_height() / 2.,
-                ))
-                .position(Vec2::new(
-                    256. - 8. - (self.machinery.engine.gear.get_width() / 2.),
-                    720. - 52. - (self.machinery.engine.gear.get_height() / 2.),
-                ))
-                .rotation(self.machinery.engine.gear.rotation)
-                .scale(Vec2::new(0.2, 0.2)),
-        );
-
-        for extractor in &self.machinery.extractors {
-            extractor.gear.texture.draw(
-                ctx,
-                DrawParams::new()
-                    .position(Vec2::new(300., 600.))
-                    .origin(Vec2::new(
-                        extractor.gear.get_width() / 2.,
-                        extractor.gear.get_height() / 2.,
-                    ))
-                    .rotation(extractor.gear.rotation)
-                    .scale(Vec2::new(0.3, 0.3)),
-            );
-        }
+        self.machinery.draw(ctx, &self.assets);
 
         for pile in self.environment.piles.values_mut() {
             for gloop in pile {
-                self.assets.gloop_texture.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(gloop.position)
-                        .origin(Vec2::new(
-                            self.assets.gloop_texture.width() as f32,
-                            self.assets.gloop_texture.height() as f32,
-                        ))
-                        .scale(Vec2::new(0.2, 0.2)),
-                )
+                gloop.draw(ctx, &self.assets);
             }
         }
 
@@ -275,7 +243,11 @@ impl Scene for MainScene {
                 ctx,
                 DrawParams::new()
                     .position(hitter.position)
-                    .scale(Vec2::new(hitter.scale, hitter.scale)),
+                    .origin(Vec2::new(
+                        self.assets.glooper_texture.width() as f32,
+                        self.assets.glooper_texture.height() as f32,
+                    ))
+                    .scale(hitter.scale),
             )
         }
 
@@ -284,17 +256,16 @@ impl Scene for MainScene {
                 ctx,
                 DrawParams::new()
                     .position(mover.position)
-                    .scale(Vec2::new(mover.scale, mover.scale))
+                    .scale(mover.scale)
+                    .origin(Vec2::new(
+                        self.assets.glooper_texture.width() as f32,
+                        self.assets.glooper_texture.height() as f32,
+                    ))
                     .color(Color::RED),
             );
 
             if mover.gloop_collected {
-                self.assets.gloop_texture.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(mover.gloop_held.as_ref().unwrap().position)
-                        .scale(Vec2::new(0.2, 0.2)),
-                );
+                mover.gloop_held.unwrap().draw(ctx, &self.assets);
             }
         }
 
@@ -303,14 +274,18 @@ impl Scene for MainScene {
                 ctx,
                 DrawParams::new()
                     .position(idler.position)
-                    .scale(Vec2::new(idler.scale, idler.scale)),
+                    .origin(Vec2::new(
+                        self.assets.glooper_texture.width() as f32,
+                        self.assets.glooper_texture.height() as f32,
+                    ))
+                    .scale(idler.scale),
             )
         }
 
         self.assets.floor_texture.draw(
             ctx,
             DrawParams::new()
-                .position(Vec2::new(0., 720. - 70.))
+                .position(Vec2::new(0., FLOOR_LEVEL))
                 .scale(Vec2::new(150., 5.)),
         );
 

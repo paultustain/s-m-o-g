@@ -2,20 +2,20 @@ use std::f32::consts::PI;
 
 use tetra::math::Vec2;
 
-use crate::assets::Assets;
-
 use super::Gear;
-
+#[derive(Clone, Copy)]
 pub struct Extractor {
     pub gear: Gear,
+    pub position: Vec2<f32>,
     base_extract_rate: f32,
     gloop_spare: f32,
 }
 
 impl Extractor {
-    pub fn new(assets: &Assets) -> Extractor {
+    pub fn new() -> Extractor {
         Extractor {
-            gear: Gear::new(assets.gear_texture.clone(), 20., Vec2::new(800., 300.)),
+            gear: Gear::new(20.),
+            position: Vec2::new(300., 600.),
             base_extract_rate: 35.,
             gloop_spare: 0.,
         }

@@ -8,6 +8,6 @@ pub fn random_pile() -> u128 {
     v as u128
 }
 
-pub fn get_column(x: f32) -> u128 {
+pub fn get_column<T: Into<u128>>(x: T) -> u128 {
     0
 }

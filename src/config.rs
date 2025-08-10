@@ -1,9 +1,10 @@
 use tetra::{Context, window};
 
+pub const FLOOR_LEVEL: f32 = 750.;
 pub const ZOOM_SPEED: f32 = 0.1;
 pub const MOVEMENT_SPEED: f32 = 4.;
-pub const MIN_CAMERA_SCALE: f32 = 0.5;
-pub const MAX_CAMERA_SCALE: f32 = 3.;
+pub const MIN_CAMERA_SCALE: f32 = 0.25;
+pub const MAX_CAMERA_SCALE: f32 = 4.;
 pub const MAX_SMOG: f32 = 10000.;
 
 /// Any general configuration about the file
