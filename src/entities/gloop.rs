@@ -8,7 +8,7 @@ use crate::{assets::Assets, config::FLOOR_LEVEL};
 
 const FALL_SPEED: f32 = 8.; // consider physics processes in space 
 
-const GLOOP_GREY: Color = Color::rgba(100., 100., 100., 1.);
+const GLOOP_GREY: Color = Color::rgba(0.2, 0.2, 0.2, 1.);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Gloop {

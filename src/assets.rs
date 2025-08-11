@@ -6,7 +6,10 @@ use tetra::{
 pub struct Assets {
     pub engine_texture: Texture,
     pub extractor_texture: Texture,
-    pub gear_texture: Texture,
+    pub gear4_texture: Texture,
+    pub gear8_texture: Texture,
+    pub gear12_texture: Texture,
+    pub gear16_texture: Texture,
     pub power_texture: Texture,
     pub glooper_texture: Texture,
     pub gloop_texture: Texture,
@@ -20,8 +23,14 @@ pub struct Assets {
 impl Assets {
     pub fn load(ctx: &mut Context) -> Assets {
         Assets {
-            gear_texture: Texture::new(ctx, "./resources/engine.png")
-                .expect("Failed to get engine texture"),
+            gear4_texture: Texture::new(ctx, "./resources/gear4.png")
+                .expect("Failed to get gear4 texture"),
+            gear8_texture: Texture::new(ctx, "./resources/gear8.png")
+                .expect("Failed to get gear8 texture"),
+            gear12_texture: Texture::new(ctx, "./resources/gear12.png")
+                .expect("Failed to get gear12 texture"),
+            gear16_texture: Texture::new(ctx, "./resources/gear16.png")
+                .expect("Failed to get gear16 texture"),
             extractor_texture: Texture::new(ctx, "./resources/extractor.png")
                 .expect("Failed to get extractor texture"),
             engine_texture: Texture::new(ctx, "./resources/engine_base.png")

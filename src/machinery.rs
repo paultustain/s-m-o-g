@@ -1,6 +1,10 @@
 use std::f32::consts::PI;
 
-use tetra::{Context, graphics::DrawParams, math::Vec2};
+use tetra::{
+    Context,
+    graphics::{Color, DrawParams},
+    math::Vec2,
+};
 
 use crate::{
     assets::Assets,
@@ -16,11 +20,11 @@ pub struct Machinery {
 }
 
 impl Machinery {
-    pub fn new() -> Machinery {
-        Machinery {
-            engine: Engine::new(),
+    pub fn new() -> tetra::Result<Machinery> {
+        Ok(Machinery {
+            engine: Engine::new()?,
             extractors: vec![Extractor::new()],
-        }
+        })
     }
 
     pub fn draw(&self, ctx: &mut Context, assets: &Assets) {
@@ -32,33 +36,20 @@ impl Machinery {
                 .origin(Vec2::new(0., assets.engine_texture.height() as f32)),
         );
 
-        assets.gear_texture.draw(
+        if self.engine.hover_box.showing {
+            self.engine.hover_box.draw(ctx, assets);
+        }
+
+        self.engine.gear.draw(
             ctx,
-            DrawParams::new()
-                .position(Vec2::new(
-                    self.engine.position.x + 14.,
-                    self.engine.position.y - 14.,
-                ))
-                .origin(Vec2::new(
-                    assets.gear_texture.width() as f32 / 2.,
-                    assets.gear_texture.height() as f32 / 2.,
-                ))
-                .rotation(self.engine.gear.rotation),
+            Vec2::new(self.engine.position.x + 14., self.engine.position.y - 14.),
+            assets,
         );
 
+        self.engine.draw_feedback(ctx, &assets.pixel);
         for extractor in &self.extractors {
             // Very hardcoded! must fix
-            assets.gear_texture.draw(
-                ctx,
-                DrawParams::new()
-                    .position(Vec2::new(300., 600.))
-                    .origin(Vec2::new(
-                        assets.gear_texture.width() as f32 / 2.,
-                        assets.gear_texture.height() as f32 / 2.,
-                    ))
-                    .rotation(extractor.gear.rotation)
-                    .scale(Vec2::new(0.4, 0.4)),
-            )
+            extractor.gear.draw(ctx, Vec2::new(300., 600.), assets)
         }
     }
 

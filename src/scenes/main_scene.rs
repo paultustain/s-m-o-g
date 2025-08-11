@@ -37,17 +37,17 @@ impl MainScene {
         cam.position = Vec2::new(200., FLOOR_LEVEL - 115.);
 
         let mut office = Office::new();
-        let glooper = Glooper::new(Vec2::new(100., FLOOR_LEVEL), Role::Hitter);
-        office.add_glooper(glooper);
-        let mover = Glooper::new(Vec2::new(100., FLOOR_LEVEL), Role::Mover);
-        office.add_glooper(mover);
+        let glooper = Glooper::new(ctx, Vec2::new(100., FLOOR_LEVEL), Role::Idle);
+        office.add_glooper(glooper?);
+        let mover = Glooper::new(ctx, Vec2::new(100., FLOOR_LEVEL), Role::Mover);
+        office.add_glooper(mover?);
 
         Ok(MainScene {
             background: Canvas::new(ctx, 1260, 720)?,
             canvas: Canvas::new(ctx, 1260, 720)?,
             camera: cam,
             assets: assets,
-            machinery: Machinery::new(),
+            machinery: Machinery::new()?,
             environment: Environment::new(),
             office: office,
             button: MainBox::new(50, 30, Vec2::new(630., 50.)),
@@ -60,14 +60,30 @@ impl Scene for MainScene {
         let mouse_pos = self.camera.mouse_position(ctx);
         let mut column_top = Rect::new(0., 0., 1., 1.);
 
-        if input::is_mouse_button_pressed(ctx, MouseButton::Left) {
-            if self
-                .machinery
-                .engine
-                .bounds(&self.assets.engine_texture)
-                .contains_point(mouse_pos)
-            {
-                self.machinery.turn_handle();
+        if self
+            .machinery
+            .engine
+            .bounds(&self.assets.engine_texture)
+            .contains_point(mouse_pos)
+        {
+            self.machinery.engine.hover_box.showing = true;
+
+            // self.machinery.turn_handle();
+        } else {
+            if self.machinery.engine.hover_box.showing {
+                if self
+                    .machinery
+                    .engine
+                    .hover_box
+                    .bounds()
+                    .contains_point(mouse_pos)
+                {
+                    self.machinery.engine.hover_box.showing = true;
+                } else {
+                    self.machinery.engine.hover_box.showing = false;
+                }
+            } else {
+                self.machinery.engine.hover_box.showing = false;
             }
         }
 
@@ -75,7 +91,7 @@ impl Scene for MainScene {
             || input::is_mouse_button_down(ctx, MouseButton::Left)
         {
             if mouse_pos.x > 232. {
-                let column_hover = (mouse_pos.x - 232.) / 3.;
+                let column_hover = (mouse_pos.x - 235.) / 3.;
                 if self.environment.piles.contains_key(&(column_hover as u128)) {
                     let column_height = self.environment.piles[&(column_hover as u128)].len() + 1;
                     column_top = Rect::new(
@@ -161,9 +177,9 @@ impl Scene for MainScene {
             self.camera.position.x += MOVEMENT_SPEED;
         }
 
-        for idler in &mut self.office.idlers {
-            idler.bounce();
-        }
+        //for idler in &mut self.office.idlers {
+        // idler.bounce();
+        //}
 
         for hitter in &mut self.office.hitters {
             hitter.hit_engine(&mut self.machinery);
@@ -196,7 +212,6 @@ impl Scene for MainScene {
         graphics::clear(ctx, Color::rgba(1., 1., 1., 0.));
 
         // Drawing the labels and details
-        //
         let mut label = Text::new("Testing", self.assets.main_font.clone());
         self.button.draw(ctx, &self.assets);
         label.draw(
@@ -251,17 +266,18 @@ impl Scene for MainScene {
             )
         }
 
-        for mover in &self.office.movers {
-            self.assets.glooper_texture.draw(
+        for mover in &mut self.office.movers {
+            mover.animation.advance(ctx);
+
+            mover.animation.draw(
                 ctx,
                 DrawParams::new()
                     .position(mover.position)
-                    .scale(mover.scale)
                     .origin(Vec2::new(
                         self.assets.glooper_texture.width() as f32,
                         self.assets.glooper_texture.height() as f32,
                     ))
-                    .color(Color::RED),
+                    .scale(mover.scale),
             );
 
             if mover.gloop_collected {
@@ -269,8 +285,9 @@ impl Scene for MainScene {
             }
         }
 
-        for idler in &self.office.idlers {
-            self.assets.glooper_texture.draw(
+        for idler in &mut self.office.idlers {
+            idler.animation.advance(ctx);
+            idler.animation.draw(
                 ctx,
                 DrawParams::new()
                     .position(idler.position)

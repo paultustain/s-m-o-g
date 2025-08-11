@@ -1,6 +1,6 @@
 use tetra::{
     Context,
-    graphics::{Color, DrawParams},
+    graphics::{Color, DrawParams, Rectangle},
     math::Vec2,
 };
 
@@ -54,6 +54,7 @@ impl Point {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct MainBox {
     // This will be a black button when you hover over something
     // Some will have info, some will have resouces
@@ -90,4 +91,46 @@ impl MainBox {
         }
     }
 }
-pub struct SecondaryButton {}
+
+#[derive(Copy, Clone)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+#[derive(Copy, Clone)]
+pub struct HoverBox {
+    pub showing: bool,
+    direction: Direction,
+    main_box: MainBox,
+}
+
+impl HoverBox {
+    pub fn new(
+        width: u32,
+        height: u32,
+        origin: Vec2<f32>,
+        direction: Direction,
+    ) -> tetra::Result<HoverBox> {
+        Ok(HoverBox {
+            showing: false,
+            direction: direction,
+            main_box: MainBox::new(width, height, origin),
+        })
+    }
+
+    pub fn draw(self, ctx: &mut Context, assets: &Assets) {
+        self.main_box.draw(ctx, assets);
+    }
+
+    pub fn bounds(self) -> Rectangle {
+        Rectangle {
+            x: self.main_box.origin.x - self.main_box.width as f32,
+            y: self.main_box.origin.y - self.main_box.height as f32,
+            width: self.main_box.width as f32 * 2.,
+            height: self.main_box.height as f32 * 2. + 35.,
+        }
+    }
+}

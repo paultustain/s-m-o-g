@@ -14,7 +14,7 @@ pub struct Extractor {
 impl Extractor {
     pub fn new() -> Extractor {
         Extractor {
-            gear: Gear::new(20.),
+            gear: Gear::new(50.),
             position: Vec2::new(300., 600.),
             base_extract_rate: 35.,
             gloop_spare: 0.,
